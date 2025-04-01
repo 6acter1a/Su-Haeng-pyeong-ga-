@@ -1,76 +1,51 @@
-import sys
-import os
 import tkinter as tk
 from tkinter import messagebox
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from chemical_reaction import ChemicalReaction  # 이전과 동일한 모듈 사용
 
-from reaction_calculator import ChemicalReaction
+def calculate_rate():
+    try:
+        # 사용자 입력값 받기
+        concentration = float(concentration_entry.get())
+        time = float(time_entry.get())
+        order = int(order_var.get())
 
-def calculate():
-    equation = entry_equation.get()
-    reaction = ChemicalReaction(equation)
-    
-    given_masses = {}
-    for reactant in reaction.reactants:
-        try:
-            mass = float(entries[reactant].get())
-            given_masses[reactant] = mass
-        except ValueError:
-            messagebox.showerror("Input Error", f"Invalid mass for {reactant}")
-            return
-    
-    molar_masses = {}
-    for compound in set(reaction.reactants.keys()).union(set(reaction.products.keys())):
-        molar_mass = reaction.calculate_molar_mass(compound)
-        molar_masses[compound] = molar_mass
-    
-    result = reaction.calculate_mass(given_masses, molar_masses)
-    
-    output_text.set("Remaining Reactants:\n")
-    for reactant, mass in result['reactants_left'].items():
-        output_text.set(output_text.get() + f"{reactant}: {mass:.2f} g\n")
-    
-    output_text.set(output_text.get() + "\nProducts Formed:\n")
-    for product, mass in result['products'].items():
-        output_text.set(output_text.get() + f"{product}: {mass:.2f} g\n")
+        # ChemicalReaction 객체 생성
+        reaction = ChemicalReaction(order)
 
-def setup_ui():
-    global entry_equation, entries, output_text
-    
-    root = tk.Tk()
-    root.title("Chemical Reaction Calculator")
-    
-    tk.Label(root, text="Enter chemical equation:").pack()
-    entry_equation = tk.Entry(root, width=50)
-    entry_equation.pack()
-    
-    tk.Button(root, text="Submit Equation", command=setup_mass_inputs).pack()
-    
-    root.mainloop()
+        # 반응 속도 계산
+        rate = reaction.calculate_rate(concentration, time, order)
+        
+        # 결과 출력
+        result_label.config(text=f"계산된 반응 속도: {rate:.2f}")
+    except ValueError:
+        # 잘못된 입력 처리
+        messagebox.showerror("입력 오류", "잘못된 값을 입력했습니다. 농도와 시간은 숫자로 입력하세요.")
 
-def setup_mass_inputs():
-    equation = entry_equation.get()
-    reaction = ChemicalReaction(equation)
-    
-    global entries, output_text
-    entries = {}
-    mass_window = tk.Toplevel()
-    mass_window.title("Enter Masses")
-    
-    for reactant in reaction.reactants:
-        tk.Label(mass_window, text=f"Mass of {reactant} (g):").pack()
-        entry = tk.Entry(mass_window)
-        entry.pack()
-        entries[reactant] = entry
-    
-    tk.Button(mass_window, text="Calculate", command=calculate).pack()
-    
-    output_text = tk.StringVar()
-    output_label = tk.Label(mass_window, textvariable=output_text, justify="left")
-    output_label.pack()
+# GUI 윈도우 설정
+root = tk.Tk()
+root.title("반응 속도 계산기")
 
-def main():
-    setup_ui()
+# 레이아웃 설정
+tk.Label(root, text="반응 차수를 선택하세요 (0, 1, 2):").pack(pady=5)
+order_var = tk.StringVar()
+order_menu = tk.OptionMenu(root, order_var, "0", "1", "2")
+order_menu.pack(pady=5)
 
-if __name__ == "__main__":
-    main()
+tk.Label(root, text="반응물 농도 (단위: M):").pack(pady=5)
+concentration_entry = tk.Entry(root)
+concentration_entry.pack(pady=5)
+
+tk.Label(root, text="반응 시간 (단위: s):").pack(pady=5)
+time_entry = tk.Entry(root)
+time_entry.pack(pady=5)
+
+# 계산 버튼
+calculate_button = tk.Button(root, text="계산", command=calculate_rate)
+calculate_button.pack(pady=20)
+
+# 결과 레이블
+result_label = tk.Label(root, text="계산된 반응 속도: ")
+result_label.pack(pady=5)
+
+# 프로그램 실행
+root.mainloop()
