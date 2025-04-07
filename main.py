@@ -1,51 +1,62 @@
 import tkinter as tk
 from tkinter import messagebox
-from chemical_reaction import ChemicalReaction  # 이전과 동일한 모듈 사용
+from chemical_reaction import ReactionSimulator
 
-def calculate_rate():
+def calculate():
     try:
-        # 사용자 입력값 받기
-        concentration = float(concentration_entry.get())
-        time = float(time_entry.get())
-        order = int(order_var.get())
+        order = reaction_order.get()
+        A0 = float(entry_A0.get())
+        At = float(entry_At.get())
+        t = float(entry_time.get())
 
-        # ChemicalReaction 객체 생성
-        reaction = ChemicalReaction(order)
+        if At > A0:
+            raise ValueError("최종 농도는 초기 농도보다 작거나 같아야 합니다.")
 
-        # 반응 속도 계산
-        rate = reaction.calculate_rate(concentration, time, order)
-        
-        # 결과 출력
-        result_label.config(text=f"계산된 반응 속도: {rate:.2f}")
-    except ValueError:
-        # 잘못된 입력 처리
-        messagebox.showerror("입력 오류", "잘못된 값을 입력했습니다. 농도와 시간은 숫자로 입력하세요.")
+        # 계산
+        reaction_amount = A0 - At
+        k = ReactionSimulator.calculate_rate_constant(order, A0, At, t)
+        rate = ReactionSimulator(order, A0, k).calculate_rate(At)
 
-# GUI 윈도우 설정
+        # 결과 표시
+        result_text.set(f"""[결과]
+반응량: {reaction_amount:.4f} M
+속도 상수 (k): {k:.4f}
+현재 반응 속도: {rate:.4f} M/s""")
+
+    except ValueError as ve:
+        messagebox.showerror("입력 오류", str(ve))
+    except Exception:
+        messagebox.showerror("오류", "유효한 숫자를 모두 입력했는지 확인하세요.")
+
+# GUI 생성
 root = tk.Tk()
 root.title("반응 속도 계산기")
 
-# 레이아웃 설정
-tk.Label(root, text="반응 차수를 선택하세요 (0, 1, 2):").pack(pady=5)
-order_var = tk.StringVar()
-order_menu = tk.OptionMenu(root, order_var, "0", "1", "2")
-order_menu.pack(pady=5)
+# 반응 차수 선택
+reaction_order = tk.IntVar(value=1)
+tk.Label(root, text="반응 차수:").grid(row=0, column=0, sticky='w')
+tk.Radiobutton(root, text="0차", variable=reaction_order, value=0).grid(row=0, column=1)
+tk.Radiobutton(root, text="1차", variable=reaction_order, value=1).grid(row=0, column=2)
+tk.Radiobutton(root, text="2차", variable=reaction_order, value=2).grid(row=0, column=3)
 
-tk.Label(root, text="반응물 농도 (단위: M):").pack(pady=5)
-concentration_entry = tk.Entry(root)
-concentration_entry.pack(pady=5)
+# 입력 필드
+tk.Label(root, text="[A]₀ (M):").grid(row=1, column=0, sticky='w')
+entry_A0 = tk.Entry(root)
+entry_A0.grid(row=1, column=1, columnspan=3)
 
-tk.Label(root, text="반응 시간 (단위: s):").pack(pady=5)
-time_entry = tk.Entry(root)
-time_entry.pack(pady=5)
+tk.Label(root, text="[A]ₜ (M):").grid(row=2, column=0, sticky='w')
+entry_At = tk.Entry(root)
+entry_At.grid(row=2, column=1, columnspan=3)
 
-# 계산 버튼
-calculate_button = tk.Button(root, text="계산", command=calculate_rate)
-calculate_button.pack(pady=20)
+tk.Label(root, text="시간 (s):").grid(row=3, column=0, sticky='w')
+entry_time = tk.Entry(root)
+entry_time.grid(row=3, column=1, columnspan=3)
 
-# 결과 레이블
-result_label = tk.Label(root, text="계산된 반응 속도: ")
-result_label.pack(pady=5)
+# 버튼
+tk.Button(root, text="계산하기", command=calculate).grid(row=4, column=0, columnspan=4, pady=10)
 
-# 프로그램 실행
+# 결과 출력
+result_text = tk.StringVar()
+tk.Label(root, textvariable=result_text, justify="left").grid(row=5, column=0, columnspan=4)
+
 root.mainloop()
